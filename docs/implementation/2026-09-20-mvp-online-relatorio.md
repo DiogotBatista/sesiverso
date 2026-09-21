@@ -137,6 +137,10 @@ No servidor HTTP local, as três páginas responderam `200 text/html` e os 11 v�
 
 ## Publicação
 
+### Revisão posterior
+
+Na revisão posterior, a marca exibida foi alterada para **Cidade Ideal**. Durante as escolhas, o player principal agora é ocultado e silenciado; ele volta a aparecer com áudio ao retomar. As prévias permanecem sem som para não competir com o vídeo principal.
+
 Foi criado um pacote mínimo, sem documentação, testes, validador ou prints:
 
 ```text

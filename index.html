@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sesiverso — Crie sua cidade</title>
+  <title>Cidade Ideal — Crie sua cidade</title>
   <style>
     :root{color-scheme:dark;font-family:Inter,ui-rounded,"Segoe UI",system-ui,sans-serif;background:#071414;color:#f7fff9}
     *{box-sizing:border-box}
@@ -53,7 +53,7 @@
   <main id="app">
     <section id="tela-inicial" class="tela inicio">
       <form id="form-inicio" class="cartao-inicial">
-        <p class="marca">Sesiverso</p>
+        <p class="marca">Cidade Ideal</p>
         <h1>Crie sua cidade</h1>
         <p class="subtitulo">Suas escolhas vão transformar o futuro. Primeiro, dê um nome à cidade que você quer construir.</p>
         <label for="nome-cidade">Nome da sua cidade</label>
@@ -65,7 +65,7 @@
 
     <section id="tela-jogo" class="tela jogo" hidden>
       <header class="barra">
-        <span class="marca">Sesiverso</span>
+        <span class="marca">Cidade Ideal</span>
         <span id="cidade-atual" class="cidade"></span>
         <button id="reiniciar" class="reiniciar" type="button">Recomeçar</button>
       </header>
@@ -290,6 +290,7 @@
     if (elementos.inicial) elementos.inicial.hidden = true;
     if (elementos.jogo) elementos.jogo.hidden = false;
     if (elementos.player) {
+      elementos.player.hidden = false;
       elementos.player.muted = false;
       elementos.player.playsInline = true;
       definirFonte(principal, 'principal');
@@ -319,12 +320,18 @@
   }
 
   function mostrarEscolha(decisao) {
+    if (elementos.player) {
+      elementos.player.muted = true;
+      elementos.player.hidden = true;
+    }
     if (elementos.titulo) elementos.titulo.textContent = decisao.titulo;
     decisao.opcoes.forEach((opcao, indice) => {
       const previa = elementos.previas[indice];
       if (elementos.textos[indice]) elementos.textos[indice].textContent = opcao.texto;
       if (!previa) return;
       previa.muted = true;
+      previa.defaultMuted = true;
+      previa.volume = 0;
       previa.playsInline = true;
       previa.src = opcao.video;
       previa.currentTime = 0;
@@ -358,7 +365,11 @@
     estado.proximaDecisao += 1;
     if (elementos.painel) elementos.painel.hidden = true;
     pararPrevias();
-    if (elementos.player) elementos.player.currentTime = decisao.retomaEm;
+    if (elementos.player) {
+      elementos.player.hidden = false;
+      elementos.player.muted = false;
+      elementos.player.currentTime = decisao.retomaEm;
+    }
     reproduzirAtual();
     return true;
   }
