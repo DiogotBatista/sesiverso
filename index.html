@@ -26,6 +26,7 @@
     .barra{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem clamp(.8rem,3vw,1.4rem);background:#0b211dbf;backdrop-filter:blur(10px)}
     .cidade{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
     .cidade::before{content:"Cidade: ";color:#8ccbb0;font-weight:500}
+    .reiniciar{flex:0 0 auto;padding:.55rem .75rem;border:1px solid #ffffff38;border-radius:.7rem;background:transparent;color:#d8ece4;font-size:.85rem}
     .player-area{position:relative;display:grid;place-items:center;min-height:0;overflow:hidden}
     #player{display:block;width:100%;height:100%;max-height:calc(100dvh - 3.2rem);object-fit:contain;background:#000}
     .escolha{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:clamp(1rem,4vw,3rem);background:linear-gradient(#020707ee,#07130ff5)}
@@ -36,6 +37,14 @@
     .opcao video{width:100%;aspect-ratio:16/9;border-radius:.8rem;background:#000;object-fit:cover}
     .opcao span{padding:.2rem .4rem .55rem;font-size:clamp(1rem,3vw,1.25rem)}
     .acao{position:absolute;left:50%;bottom:1.5rem;translate:-50%;width:min(22rem,calc(100% - 2rem));padding:1rem;border:0;border-radius:1rem;background:#fff;color:#071414;font-weight:850;box-shadow:0 1rem 3rem #000b}
+    .resultado{position:absolute;inset:0 0 auto;padding:1.2rem 1rem 2.8rem;background:linear-gradient(#000e,#0000);text-align:center;pointer-events:none}
+    .resultado h2{margin:0;font-size:clamp(1.4rem,5vw,2.7rem);text-shadow:0 3px 18px #000}
+    .resultado .primario{width:min(22rem,100%);margin-top:1rem;pointer-events:auto}
+    .status{position:absolute;inset:0;display:grid;place-items:center;padding:1rem;background:#020807e8}
+    .status-caixa{width:min(30rem,100%);padding:1.5rem;border:1px solid #ffffff26;border-radius:1.4rem;background:#0b211d;text-align:center;box-shadow:0 1rem 4rem #000a}
+    .status-acoes{display:grid;gap:.7rem;margin-top:1rem}
+    .secundario{min-height:3.1rem;border:1px solid #ffffff45;border-radius:.9rem;background:transparent;color:#fff;font-weight:750}
+    .carregando{position:absolute;right:1rem;bottom:1rem;padding:.55rem .8rem;border-radius:2rem;background:#000c;font-size:.85rem}
     [hidden]{display:none!important}
     @media(max-width:640px){.opcoes{grid-template-columns:1fr}.escolha{justify-content:flex-start;overflow:auto}.opcao{grid-template-columns:8rem 1fr;align-items:center}.opcao video{aspect-ratio:1}.opcao span{padding:.5rem}.barra{font-size:.9rem}}
   </style>
@@ -58,6 +67,7 @@
       <header class="barra">
         <span class="marca">Sesiverso</span>
         <span id="cidade-atual" class="cidade"></span>
+        <button id="reiniciar" class="reiniciar" type="button">Recomeçar</button>
       </header>
       <div class="player-area">
         <video id="player" preload="auto" playsinline></video>
@@ -74,7 +84,22 @@
             </button>
           </div>
         </section>
+        <section id="painel-resultado" class="resultado" hidden>
+          <h2 id="titulo-resultado"></h2>
+          <button id="nova-cidade" class="primario" type="button" hidden>Criar outra cidade</button>
+        </section>
+        <section id="status" class="status" role="alert" hidden>
+          <div class="status-caixa">
+            <p id="status-texto"></p>
+            <div class="status-acoes">
+              <button id="tentar-novamente" class="primario" type="button">Tentar novamente</button>
+              <button id="voltar-inicio" class="secundario" type="button">Voltar ao início</button>
+            </div>
+          </div>
+        </section>
+        <span id="carregando" class="carregando" aria-live="polite" hidden>Carregando vídeo…</span>
         <button id="continuar" class="acao" type="button" hidden>Toque para continuar</button>
+        <video id="precarregar" hidden muted preload="auto"></video>
       </div>
     </section>
   </main>
@@ -168,26 +193,82 @@
   }
 
   const estado = {
-    fase: 'inicio', nome: '', proximaDecisao: 0, escolhas: [], indiceFinal: 0, sessao: 0
+    fase: 'inicio', nome: '', proximaDecisao: 0, escolhas: [], indiceFinal: 0, sessao: 0,
+    carregando: false, erro: false, ultimoToque: Date.now()
   };
   const porId = id => typeof document === 'undefined' ? null : document.getElementById(id);
   const elementos = {
     inicial: porId('tela-inicial'), jogo: porId('tela-jogo'), formulario: porId('form-inicio'),
     nome: porId('nome-cidade'), mensagemNome: porId('mensagem-nome'), cidade: porId('cidade-atual'),
     player: porId('player'), painel: porId('painel-escolha'), titulo: porId('titulo-escolha'),
-    continuar: porId('continuar'),
+    continuar: porId('continuar'), reiniciar: porId('reiniciar'), resultado: porId('painel-resultado'),
+    tituloResultado: porId('titulo-resultado'), novaCidade: porId('nova-cidade'),
+    status: porId('status'), statusTexto: porId('status-texto'), tentar: porId('tentar-novamente'),
+    voltar: porId('voltar-inicio'), carregando: porId('carregando'), precarga: porId('precarregar'),
     opcoes: [porId('opcao-0'), porId('opcao-1')],
     textos: [porId('texto-0'), porId('texto-1')],
     previas: [porId('previa-0'), porId('previa-1')]
   };
+  let temporizadorInatividade = null;
+  let fimHandler = null;
 
-  function reproduzirPrincipal() {
+  function definirCarregando(valor) {
+    estado.carregando = valor;
+    if (elementos.carregando) elementos.carregando.hidden = !valor;
+    if (valor && temporizadorInatividade !== null) {
+      clearTimeout(temporizadorInatividade);
+      temporizadorInatividade = null;
+    }
+  }
+
+  function ocultarStatus() {
+    estado.erro = false;
+    if (elementos.status) elementos.status.hidden = true;
+  }
+
+  function mostrarErro(mensagem = 'Ops, esse vídeo não carregou.') {
+    estado.erro = true;
+    definirCarregando(false);
+    if (elementos.statusTexto) elementos.statusTexto.textContent = mensagem;
+    if (elementos.status) elementos.status.hidden = false;
+    if (elementos.continuar) elementos.continuar.hidden = true;
+  }
+
+  function reproduzirAtual() {
     if (!elementos.player) return Promise.resolve();
     elementos.continuar.hidden = true;
+    const sessao = estado.sessao;
+    const fonte = elementos.player.dataset.fonte || elementos.player.src;
     const tentativa = elementos.player.play();
     return tentativa && typeof tentativa.catch === 'function'
-      ? tentativa.catch(() => { elementos.continuar.hidden = false; })
+      ? tentativa.catch(erro => {
+        if (sessao !== estado.sessao || fonte !== (elementos.player.dataset.fonte || elementos.player.src)) return;
+        if (erro?.name === 'NotAllowedError') elementos.continuar.hidden = false;
+        else mostrarErro();
+      })
       : Promise.resolve();
+  }
+
+  function conectarFim(fase, indice = -1) {
+    if (!elementos.player) return;
+    if (fimHandler) elementos.player.removeEventListener('ended', fimHandler);
+    const sessao = estado.sessao;
+    const fonte = elementos.player.dataset.fonte;
+    fimHandler = () => {
+      if (sessao !== estado.sessao || estado.fase !== fase) return;
+      if (elementos.player.dataset.fonte !== fonte) return;
+      if (fase === 'resultado' && estado.indiceFinal !== indice) return;
+      encerrarVideo();
+    };
+    elementos.player.addEventListener('ended', fimHandler);
+  }
+
+  function definirFonte(caminho, fase, indice = -1) {
+    if (!elementos.player) return;
+    elementos.player.dataset.fonte = caminho;
+    elementos.player.src = caminho;
+    elementos.player.currentTime = 0;
+    conectarFim(fase, indice);
   }
 
   function iniciar(nomeInformado) {
@@ -202,17 +283,20 @@
     estado.escolhas.length = 0;
     estado.indiceFinal = 0;
     estado.fase = 'principal';
+    estado.ultimoToque = Date.now();
+    ocultarStatus();
     if (elementos.cidade) elementos.cidade.textContent = nome;
     if (elementos.mensagemNome) elementos.mensagemNome.textContent = '';
     if (elementos.inicial) elementos.inicial.hidden = true;
     if (elementos.jogo) elementos.jogo.hidden = false;
     if (elementos.player) {
-      elementos.player.src = principal;
-      elementos.player.currentTime = 0;
       elementos.player.muted = false;
       elementos.player.playsInline = true;
+      definirFonte(principal, 'principal');
     }
-    reproduzirPrincipal();
+    if (elementos.resultado) elementos.resultado.hidden = true;
+    if (elementos.novaCidade) elementos.novaCidade.hidden = true;
+    reproduzirAtual();
     return true;
   }
 
@@ -258,6 +342,8 @@
     estado.fase = 'escolha';
     elementos.player?.pause();
     mostrarEscolha(decisao);
+    estado.ultimoToque = Date.now();
+    agendarInatividade();
     return true;
   }
 
@@ -266,12 +352,129 @@
     const decisao = decisoes[estado.proximaDecisao];
     if (!decisao) return false;
     estado.fase = 'principal';
+    if (temporizadorInatividade !== null) clearTimeout(temporizadorInatividade);
+    temporizadorInatividade = null;
     estado.escolhas.push(decisao.opcoes[indice]);
     estado.proximaDecisao += 1;
     if (elementos.painel) elementos.painel.hidden = true;
     pararPrevias();
     if (elementos.player) elementos.player.currentTime = decisao.retomaEm;
-    reproduzirPrincipal();
+    reproduzirAtual();
+    return true;
+  }
+
+  function precargarProximo() {
+    if (!elementos.precarga) return;
+    const proximo = estado.escolhas[estado.indiceFinal + 1];
+    if (!proximo) {
+      elementos.precarga.removeAttribute('src');
+      elementos.precarga.load();
+      return;
+    }
+    elementos.precarga.src = proximo.video;
+    elementos.precarga.load();
+  }
+
+  function carregarFinalAtual() {
+    const opcao = estado.escolhas[estado.indiceFinal];
+    if (!opcao) return false;
+    definirFonte(opcao.video, 'resultado', estado.indiceFinal);
+    elementos.player.muted = false;
+    precargarProximo();
+    reproduzirAtual();
+    return true;
+  }
+
+  function encerrarVideo() {
+    if (estado.fase === 'principal') {
+      if (estado.escolhas.length !== decisoes.length) return false;
+      estado.fase = 'resultado';
+      estado.indiceFinal = 0;
+      if (elementos.tituloResultado) elementos.tituloResultado.textContent = `Aqui está a cidade ${estado.nome}`;
+      if (elementos.resultado) elementos.resultado.hidden = false;
+      if (elementos.novaCidade) elementos.novaCidade.hidden = true;
+      return carregarFinalAtual();
+    }
+    if (estado.fase !== 'resultado') return false;
+    estado.indiceFinal += 1;
+    if (estado.indiceFinal < estado.escolhas.length) return carregarFinalAtual();
+    estado.fase = 'concluido';
+    estado.ultimoToque = Date.now();
+    elementos.player?.pause();
+    if (elementos.novaCidade) elementos.novaCidade.hidden = false;
+    agendarInatividade();
+    return true;
+  }
+
+  function tentarNovamente() {
+    if (!elementos.player) return;
+    const sessao = estado.sessao;
+    const posicao = elementos.player.currentTime || 0;
+    ocultarStatus();
+    definirCarregando(true);
+    const restaurar = () => {
+      elementos.player.removeEventListener('loadedmetadata', restaurar);
+      if (sessao !== estado.sessao) return;
+      elementos.player.currentTime = Math.min(posicao, Number.isFinite(elementos.player.duration) ? elementos.player.duration : posicao);
+      reproduzirAtual();
+    };
+    elementos.player.addEventListener('loadedmetadata', restaurar);
+    elementos.player.load();
+  }
+
+  function faseComInatividade() {
+    return (estado.fase === 'escolha' || estado.fase === 'concluido') && !estado.carregando && !estado.erro;
+  }
+
+  function agendarInatividade() {
+    if (temporizadorInatividade !== null) clearTimeout(temporizadorInatividade);
+    temporizadorInatividade = null;
+    if (!faseComInatividade()) return;
+    const restante = Math.max(0, 60000 - (Date.now() - estado.ultimoToque));
+    temporizadorInatividade = setTimeout(() => verificarInatividade(Date.now()), restante);
+  }
+
+  function verificarInatividade(agora = Date.now()) {
+    if (!faseComInatividade() || agora - estado.ultimoToque < 60000) return false;
+    reiniciar();
+    return true;
+  }
+
+  function registrarInteracao() {
+    estado.ultimoToque = Date.now();
+    agendarInatividade();
+  }
+
+  function reiniciar() {
+    estado.sessao += 1;
+    if (temporizadorInatividade !== null) clearTimeout(temporizadorInatividade);
+    temporizadorInatividade = null;
+    if (fimHandler && elementos.player) elementos.player.removeEventListener('ended', fimHandler);
+    fimHandler = null;
+    elementos.player?.pause();
+    pararPrevias();
+    [elementos.player, elementos.precarga].forEach(video => {
+      if (!video) return;
+      video.removeAttribute('src');
+      video.load();
+    });
+    estado.fase = 'inicio';
+    estado.nome = '';
+    estado.proximaDecisao = 0;
+    estado.escolhas.length = 0;
+    estado.indiceFinal = 0;
+    estado.carregando = false;
+    estado.erro = false;
+    if (elementos.cidade) elementos.cidade.textContent = '';
+    if (elementos.painel) elementos.painel.hidden = true;
+    if (elementos.resultado) elementos.resultado.hidden = true;
+    if (elementos.status) elementos.status.hidden = true;
+    if (elementos.carregando) elementos.carregando.hidden = true;
+    if (elementos.continuar) elementos.continuar.hidden = true;
+    if (elementos.jogo) elementos.jogo.hidden = true;
+    if (elementos.inicial) elementos.inicial.hidden = false;
+    if (elementos.nome) elementos.nome.value = '';
+    elementos.nome?.focus?.();
     return true;
   }
 
@@ -280,14 +483,36 @@
     iniciar(elementos.nome.value);
   });
   elementos.player?.addEventListener('timeupdate', () => verificarPausa(elementos.player.currentTime));
-  elementos.continuar?.addEventListener('click', reproduzirPrincipal);
+  elementos.player?.addEventListener('waiting', () => {
+    if (estado.fase === 'principal' || estado.fase === 'resultado') definirCarregando(true);
+  });
+  elementos.player?.addEventListener('playing', () => {
+    if (estado.fase !== 'principal' && estado.fase !== 'resultado') return;
+    definirCarregando(false);
+    ocultarStatus();
+  });
+  elementos.player?.addEventListener('error', () => {
+    if (estado.fase === 'principal' || estado.fase === 'resultado') mostrarErro();
+  });
+  elementos.continuar?.addEventListener('click', reproduzirAtual);
+  elementos.reiniciar?.addEventListener('click', reiniciar);
+  elementos.novaCidade?.addEventListener('click', reiniciar);
+  elementos.voltar?.addEventListener('click', reiniciar);
+  elementos.tentar?.addEventListener('click', tentarNovamente);
   elementos.opcoes.forEach((botao, indice) => botao?.addEventListener('click', () => escolher(indice)));
   elementos.previas.forEach(previa => {
     previa?.addEventListener('timeupdate', () => repetirPrevia(previa));
     previa?.addEventListener('ended', () => repetirPrevia(previa));
   });
+  if (typeof document !== 'undefined') {
+    document.addEventListener('pointerdown', registrarInteracao);
+    document.addEventListener('keydown', registrarInteracao);
+  }
 
-  window.jogo = { principal, decisoes, validarDados, estado, iniciar, verificarPausa, escolher };
+  window.jogo = {
+    principal, decisoes, validarDados, estado, iniciar, verificarPausa, escolher,
+    encerrarVideo, reiniciar, verificarInatividade
+  };
   </script>
 </body>
 </html>

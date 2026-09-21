@@ -41,6 +41,18 @@
       if (jogo.estado.nome !== 'Cidade Águas') throw new Error('nome não foi normalizado');
       if (jogo.estado.escolhas.length !== 1) throw new Error('toque duplicado foi registrado');
     });
+    registrar('sequência final', () => {
+      jogo.reiniciar();
+      jogo.iniciar('Cidade Teste');
+      jogo.decisoes.forEach((decisao, indice) => {
+        jogo.verificarPausa(decisao.pausaEm + .1);
+        jogo.escolher(indice % 2);
+      });
+      jogo.encerrarVideo();
+      if (jogo.estado.fase !== 'resultado') throw new Error('resultado não iniciou');
+      for (let i = 0; i < 5; i++) jogo.encerrarVideo();
+      if (jogo.estado.fase !== 'concluido') throw new Error('sequência não terminou');
+    });
   });
   </script>
 </body>
