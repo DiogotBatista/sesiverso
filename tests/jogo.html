@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testes do jogo</title>
+  <style>body{font:16px system-ui;max-width:52rem;margin:2rem auto;padding:0 1rem}.ok{color:#087830}.erro{color:#b00020}iframe{display:none}</style>
+</head>
+<body>
+  <h1>Testes do jogo</h1>
+  <ol id="relatorio"></ol>
+  <iframe id="jogo" src="../index.html" title="Jogo sob teste"></iframe>
+  <script>
+  const iframe = document.querySelector('#jogo');
+  const relatorio = document.querySelector('#relatorio');
+  function registrar(nome, teste) {
+    const item = document.createElement('li');
+    try { teste(); item.className = 'ok'; item.textContent = `PASSOU — ${nome}`; }
+    catch (erro) { item.className = 'erro'; item.textContent = `FALHOU — ${nome}: ${erro.message}`; }
+    relatorio.append(item);
+  }
+  iframe.addEventListener('load', () => {
+    const jogo = iframe.contentWindow.jogo;
+    const validar = alteracao => {
+      const dados = structuredClone(jogo.decisoes);
+      alteracao?.(dados);
+      return jogo.validarDados(dados, 89.531667);
+    };
+    registrar('acervo configurado', () => { if (validar().length) throw new Error(validar().join(' ')); });
+    registrar('intervalo vazio', () => { if (!validar(d => { d[0].retomaEm = d[0].pausaEm; }).length) throw new Error('foi aceito'); });
+    registrar('identificador repetido', () => { if (!validar(d => { d[1].id = d[0].id; }).length) throw new Error('foi aceito'); });
+    registrar('opção ausente', () => { if (!validar(d => d[0].opcoes.pop()).length) throw new Error('foi aceita'); });
+    registrar('tempo não finito', () => { if (!validar(d => { d[0].pausaEm = NaN; }).length) throw new Error('foi aceito'); });
+    registrar('tempo após o vídeo', () => { if (!validar(d => { d[4].retomaEm = 90; }).length) throw new Error('foi aceito'); });
+    registrar('intervalos sobrepostos', () => { if (!validar(d => { d[1].pausaEm = d[0].retomaEm - .1; }).length) throw new Error('foram aceitos'); });
+    registrar('nome e primeira escolha', () => {
+      if (jogo.iniciar('  Cidade Águas  ') !== true) throw new Error('nome válido não iniciou');
+      jogo.verificarPausa(jogo.decisoes[0].pausaEm + .3);
+      jogo.escolher(0);
+      jogo.escolher(1);
+      if (jogo.estado.nome !== 'Cidade Águas') throw new Error('nome não foi normalizado');
+      if (jogo.estado.escolhas.length !== 1) throw new Error('toque duplicado foi registrado');
+    });
+    registrar('sequência final', () => {
+      jogo.reiniciar();
+      jogo.iniciar('Cidade Teste');
+      jogo.decisoes.forEach((decisao, indice) => {
+        jogo.verificarPausa(decisao.pausaEm + .1);
+        jogo.escolher(indice % 2);
+      });
+      jogo.encerrarVideo();
+      if (jogo.estado.fase !== 'resultado') throw new Error('resultado não iniciou');
+      for (let i = 0; i < 5; i++) jogo.encerrarVideo();
+      if (jogo.estado.fase !== 'concluido') throw new Error('sequência não terminou');
+    });
+  });
+  </script>
+</body>
+</html>
