@@ -30,7 +30,7 @@ As decisões e os caminhos dos vídeos ficam no objeto `decisoes` de `index.html
 
 ## Publicação do MVP
 
-URL de aprovação: <https://sesiverso-cidade-interativa.sunny-aphid-9952.chatgpt.site>
+URL de aprovação: <https://sesiverso-cidade-interativa.diogotbatista.chatgpt.site>
 
 - Acesso: privado, restrito ao proprietário durante a aprovação.
 - Acervo: 11 arquivos MP4, aproximadamente 21,8 MB, todos com vídeo H.264 e áudio AAC estéreo.
@@ -40,3 +40,5 @@ URL de aprovação: <https://sesiverso-cidade-interativa.sunny-aphid-9952.chatgp
 - Pendente: teste do link publicado em celular real, incluindo áudio, retrato/paisagem, cinco escolhas, sequência final e recuperação de rede.
 
 A versão offline para a feira permanece fora deste MVP.
+
+O histórico técnico completo da implementação e da publicação está em [`docs/implementation/2026-09-20-mvp-online-relatorio.md`](docs/implementation/2026-09-20-mvp-online-relatorio.md).
