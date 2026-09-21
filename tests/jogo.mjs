@@ -57,13 +57,18 @@ assert.equal(iniciar('  Cidade Águas  '), true, 'nome válido inicia');
 assert.equal(estado.nome, 'Cidade Águas', 'normaliza espaços do nome');
 assert.equal(elemento('cidade-atual').textContent, 'Cidade Águas', 'renderiza o nome como texto');
 assert.equal(estado.fase, 'principal', 'inicia o vídeo principal');
+assert.equal(elemento('player').hidden, false, 'exibe o vídeo principal ao iniciar');
 verificarPausa(decisoes[0].pausaEm + 0.3);
 assert.equal(estado.fase, 'escolha', 'salto de tempo dispara a escolha');
+assert.equal(elemento('player').hidden, true, 'oculta o vídeo principal durante a escolha');
+assert.equal(elemento('player').muted, true, 'silencia o vídeo principal durante a escolha');
 escolher(0);
 escolher(1);
 assert.equal(estado.escolhas.length, 1, 'dois toques registram uma única escolha');
 assert.equal(estado.escolhas[0].video, decisoes[0].opcoes[0].video, 'registra a opção tocada');
 assert.equal(elemento('player').currentTime, decisoes[0].retomaEm, 'retoma depois da tela de escolha');
+assert.equal(elemento('player').hidden, false, 'restaura o vídeo principal após a escolha');
+assert.equal(elemento('player').muted, false, 'restaura o áudio do vídeo principal após a escolha');
 assert.equal(elemento('previa-0').src, '', 'interrompe e libera a primeira prévia');
 
 const malicioso = '<img src=x onerror=alert(1)>';
