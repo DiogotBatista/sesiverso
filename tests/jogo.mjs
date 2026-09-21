@@ -43,6 +43,10 @@ const validar = alteracao => {
 };
 
 assert.equal(validar().length, 0, 'o acervo configurado deve ser válido');
+assert.equal(decisoes.map(decisao => decisao.titulo).join('|'),
+  'Áreas verdes 🌳|Polos industriais 🏭|Transporte 🚗|Lixo ♻️|Saneamento básico 💧',
+  'exibe os ícones dos títulos dos prints');
+assert.equal(decisoes[0].pausaEm, 62, 'pausa antes do início da trilha da primeira escolha');
 assert.ok(validar(d => { d[0].retomaEm = d[0].pausaEm; }).length, 'rejeita intervalo vazio');
 assert.ok(validar(d => { d[1].id = d[0].id; }).length, 'rejeita identificador repetido');
 assert.ok(validar(d => { d[0].opcoes.pop(); }).length, 'rejeita decisão sem duas opções');
