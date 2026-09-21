@@ -40,7 +40,7 @@
 
 Os MP4 e prints existentes são entradas. Não criar módulo genérico de fluxogramas, backend, pipeline de renderização ou estrutura de aplicação além desses arquivos.
 
-## Task 1 — Calibrar decisões e validar o acervo
+## Tarefa 1 — Calibrar decisões e validar o acervo
 
 **Arquivos:** criar `index.html`, `validar.html` e `tests/jogo.html`; atualizar `README.md` com a tabela de tempos medidos.
 
@@ -78,7 +78,7 @@ const temposValidos = Number.isFinite(d.pausaEm)
 - [ ] Confirmar relatório válido para o acervo real e falha visível ao trocar temporariamente um caminho apenas nos dados de teste. Restaurar a cópia e executar a página de testes novamente. Registrar codec não reproduzível como falha, sem esconder a necessidade de conversão.
 - [ ] Revisar o diff e criar commit apenas com os arquivos desta tarefa se permitido no ambiente; não incluir alterações previamente preparadas pelo usuário.
 
-## Task 2 — Nome, principal e cinco escolhas
+## Tarefa 2 — Nome, principal e cinco escolhas
 
 **Arquivos:** modificar `index.html` e `tests/jogo.html`.
 
@@ -116,7 +116,7 @@ function verificarPausa(tempo) {
 - [ ] Rodar testes de estado e depois jogar no navegador: cada decisão deve aparecer uma vez; o vídeo escolhido não toca inteiro nessa etapa. Emular viewport estreito e conferir botões, textos e ausência de áudio nas prévias. Rejeição do principal deve mostrar botão para continuar, não erro silencioso.
 - [ ] Revisar diff e criar commit limitado à tarefa se permitido.
 
-## Task 3 — Resultado, recuperação e nova partida
+## Tarefa 3 — Resultado, recuperação e nova partida
 
 **Arquivos:** modificar `index.html` e `tests/jogo.html`.
 
@@ -147,7 +147,7 @@ assert(jogo.estado.fase === 'concluido', 'cinco vídeos encerrados');
 - [ ] Implementar `reiniciar`: incrementar `sessao`, cancelar temporizador, parar todos os vídeos, remover fontes de prévia/pré-carga, limpar nome e escolhas e focar o campo inicial. Testar callback antigo e nova partida sem escolhas anteriores.
 - [ ] Executar a página de testes completa e três partidas reais: primeiras opções, segundas opções e combinação mista. Criar commit limitado à tarefa se permitido.
 
-## Task 4 — Publicar e conferir no celular
+## Tarefa 4 — Publicar e conferir no celular
 
 **Arquivos:** atualizar `README.md`; modificar os arquivos de mídia de entrega somente se a reprodução real demonstrar necessidade, preservando originais.
 
