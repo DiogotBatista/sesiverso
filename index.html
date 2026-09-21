@@ -4,11 +4,79 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sesiverso — Crie sua cidade</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,ui-rounded,"Segoe UI",system-ui,sans-serif;background:#071414;color:#f7fff9}
+    *{box-sizing:border-box}
+    body{min-height:100dvh;margin:0;background:radial-gradient(circle at top,#17473d 0,#071414 48%,#030909 100%)}
+    button,input{font:inherit}
+    button{cursor:pointer}
+    .tela{min-height:100dvh}
+    .inicio{display:grid;place-items:center;padding:1.5rem}
+    .cartao-inicial{width:min(36rem,100%);padding:clamp(1.5rem,6vw,3rem);border:1px solid #ffffff24;border-radius:2rem;background:#071414dc;box-shadow:0 1.5rem 5rem #0008;text-align:center}
+    .marca{margin:0 0 .5rem;color:#8af0bc;font-size:.8rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+    h1{margin:.1em 0;font-size:clamp(2.3rem,9vw,4.6rem);line-height:.95}
+    .subtitulo{margin:1.25rem auto 2rem;color:#cae0d7;font-size:clamp(1rem,3vw,1.2rem);line-height:1.55}
+    label{display:block;margin-bottom:.55rem;text-align:left;font-weight:750}
+    input{width:100%;min-height:3.5rem;padding:0 1rem;border:2px solid #ffffff32;border-radius:1rem;background:#fff;color:#10201a;font-size:1.1rem;outline:none}
+    input:focus{border-color:#77efb1;box-shadow:0 0 0 .25rem #77efb133}
+    .mensagem{min-height:1.5rem;margin:.45rem 0;color:#ffb8b8;text-align:left}
+    .primario{width:100%;min-height:3.5rem;border:0;border-radius:1rem;background:#70e7a8;color:#062015;font-weight:850;box-shadow:0 .65rem 1.8rem #0005}
+    .primario:hover{background:#91f4be}
+    .jogo{display:grid;grid-template-rows:auto 1fr;background:#020606}
+    .barra{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem clamp(.8rem,3vw,1.4rem);background:#0b211dbf;backdrop-filter:blur(10px)}
+    .cidade{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
+    .cidade::before{content:"Cidade: ";color:#8ccbb0;font-weight:500}
+    .player-area{position:relative;display:grid;place-items:center;min-height:0;overflow:hidden}
+    #player{display:block;width:100%;height:100%;max-height:calc(100dvh - 3.2rem);object-fit:contain;background:#000}
+    .escolha{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:clamp(1rem,4vw,3rem);background:linear-gradient(#020707ee,#07130ff5)}
+    .escolha h2{margin:0 0 clamp(1rem,4vh,2.2rem);text-align:center;font-size:clamp(1.7rem,6vw,3.2rem)}
+    .opcoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(.8rem,3vw,1.5rem);width:min(66rem,100%);margin:0 auto}
+    .opcao{display:grid;gap:.7rem;padding:.65rem;border:2px solid #ffffff30;border-radius:1.25rem;background:#10241f;color:#fff;font-weight:800;text-align:left;overflow:hidden}
+    .opcao:hover,.opcao:focus-visible{border-color:#78efb1;outline:3px solid #78efb144;transform:translateY(-2px)}
+    .opcao video{width:100%;aspect-ratio:16/9;border-radius:.8rem;background:#000;object-fit:cover}
+    .opcao span{padding:.2rem .4rem .55rem;font-size:clamp(1rem,3vw,1.25rem)}
+    .acao{position:absolute;left:50%;bottom:1.5rem;translate:-50%;width:min(22rem,calc(100% - 2rem));padding:1rem;border:0;border-radius:1rem;background:#fff;color:#071414;font-weight:850;box-shadow:0 1rem 3rem #000b}
+    [hidden]{display:none!important}
+    @media(max-width:640px){.opcoes{grid-template-columns:1fr}.escolha{justify-content:flex-start;overflow:auto}.opcao{grid-template-columns:8rem 1fr;align-items:center}.opcao video{aspect-ratio:1}.opcao span{padding:.5rem}.barra{font-size:.9rem}}
+  </style>
 </head>
 <body>
-  <main>
-    <h1>Crie sua cidade</h1>
-    <p>O jogo será iniciado por aqui.</p>
+  <main id="app">
+    <section id="tela-inicial" class="tela inicio">
+      <form id="form-inicio" class="cartao-inicial">
+        <p class="marca">Sesiverso</p>
+        <h1>Crie sua cidade</h1>
+        <p class="subtitulo">Suas escolhas vão transformar o futuro. Primeiro, dê um nome à cidade que você quer construir.</p>
+        <label for="nome-cidade">Nome da sua cidade</label>
+        <input id="nome-cidade" name="cidade" maxlength="60" required autocomplete="off" placeholder="Ex.: Cidade das Águas">
+        <p id="mensagem-nome" class="mensagem" aria-live="polite"></p>
+        <button class="primario" type="submit">Começar</button>
+      </form>
+    </section>
+
+    <section id="tela-jogo" class="tela jogo" hidden>
+      <header class="barra">
+        <span class="marca">Sesiverso</span>
+        <span id="cidade-atual" class="cidade"></span>
+      </header>
+      <div class="player-area">
+        <video id="player" preload="auto" playsinline></video>
+        <section id="painel-escolha" class="escolha" aria-labelledby="titulo-escolha" hidden>
+          <h2 id="titulo-escolha"></h2>
+          <div class="opcoes">
+            <button id="opcao-0" class="opcao" type="button">
+              <video id="previa-0" muted playsinline preload="metadata"></video>
+              <span id="texto-0"></span>
+            </button>
+            <button id="opcao-1" class="opcao" type="button">
+              <video id="previa-1" muted playsinline preload="metadata"></video>
+              <span id="texto-1"></span>
+            </button>
+          </div>
+        </section>
+        <button id="continuar" class="acao" type="button" hidden>Toque para continuar</button>
+      </div>
+    </section>
   </main>
 
   <script id="jogo-core">
@@ -99,7 +167,127 @@
     return erros;
   }
 
-  window.jogo = { principal, decisoes, validarDados };
+  const estado = {
+    fase: 'inicio', nome: '', proximaDecisao: 0, escolhas: [], indiceFinal: 0, sessao: 0
+  };
+  const porId = id => typeof document === 'undefined' ? null : document.getElementById(id);
+  const elementos = {
+    inicial: porId('tela-inicial'), jogo: porId('tela-jogo'), formulario: porId('form-inicio'),
+    nome: porId('nome-cidade'), mensagemNome: porId('mensagem-nome'), cidade: porId('cidade-atual'),
+    player: porId('player'), painel: porId('painel-escolha'), titulo: porId('titulo-escolha'),
+    continuar: porId('continuar'),
+    opcoes: [porId('opcao-0'), porId('opcao-1')],
+    textos: [porId('texto-0'), porId('texto-1')],
+    previas: [porId('previa-0'), porId('previa-1')]
+  };
+
+  function reproduzirPrincipal() {
+    if (!elementos.player) return Promise.resolve();
+    elementos.continuar.hidden = true;
+    const tentativa = elementos.player.play();
+    return tentativa && typeof tentativa.catch === 'function'
+      ? tentativa.catch(() => { elementos.continuar.hidden = false; })
+      : Promise.resolve();
+  }
+
+  function iniciar(nomeInformado) {
+    if (estado.fase !== 'inicio') return false;
+    const nome = typeof nomeInformado === 'string' ? nomeInformado.trim() : '';
+    if (!nome || nome.length > 60) {
+      if (elementos.mensagemNome) elementos.mensagemNome.textContent = 'Digite um nome com até 60 caracteres.';
+      return false;
+    }
+    estado.nome = nome;
+    estado.proximaDecisao = 0;
+    estado.escolhas.length = 0;
+    estado.indiceFinal = 0;
+    estado.fase = 'principal';
+    if (elementos.cidade) elementos.cidade.textContent = nome;
+    if (elementos.mensagemNome) elementos.mensagemNome.textContent = '';
+    if (elementos.inicial) elementos.inicial.hidden = true;
+    if (elementos.jogo) elementos.jogo.hidden = false;
+    if (elementos.player) {
+      elementos.player.src = principal;
+      elementos.player.currentTime = 0;
+      elementos.player.muted = false;
+      elementos.player.playsInline = true;
+    }
+    reproduzirPrincipal();
+    return true;
+  }
+
+  function pararPrevias() {
+    elementos.previas.forEach(previa => {
+      if (!previa) return;
+      previa.pause();
+      previa.removeAttribute('src');
+      previa.load();
+    });
+  }
+
+  function repetirPrevia(previa) {
+    if (!previa || !Number.isFinite(previa.duration)) return;
+    if (previa.currentTime >= Math.min(5, previa.duration)) {
+      previa.currentTime = 0;
+      const tentativa = previa.play();
+      tentativa?.catch?.(() => {});
+    }
+  }
+
+  function mostrarEscolha(decisao) {
+    if (elementos.titulo) elementos.titulo.textContent = decisao.titulo;
+    decisao.opcoes.forEach((opcao, indice) => {
+      const previa = elementos.previas[indice];
+      if (elementos.textos[indice]) elementos.textos[indice].textContent = opcao.texto;
+      if (!previa) return;
+      previa.muted = true;
+      previa.playsInline = true;
+      previa.src = opcao.video;
+      previa.currentTime = 0;
+      const tentativa = previa.play();
+      tentativa?.catch?.(() => {});
+    });
+    if (elementos.painel) elementos.painel.hidden = false;
+    elementos.opcoes[0]?.focus?.();
+  }
+
+  function verificarPausa(tempo) {
+    if (estado.fase !== 'principal') return false;
+    const decisao = decisoes[estado.proximaDecisao];
+    if (!decisao || !Number.isFinite(tempo) || tempo < decisao.pausaEm) return false;
+    estado.fase = 'escolha';
+    elementos.player?.pause();
+    mostrarEscolha(decisao);
+    return true;
+  }
+
+  function escolher(indice) {
+    if (estado.fase !== 'escolha' || !Number.isInteger(indice) || indice < 0 || indice > 1) return false;
+    const decisao = decisoes[estado.proximaDecisao];
+    if (!decisao) return false;
+    estado.fase = 'principal';
+    estado.escolhas.push(decisao.opcoes[indice]);
+    estado.proximaDecisao += 1;
+    if (elementos.painel) elementos.painel.hidden = true;
+    pararPrevias();
+    if (elementos.player) elementos.player.currentTime = decisao.retomaEm;
+    reproduzirPrincipal();
+    return true;
+  }
+
+  elementos.formulario?.addEventListener('submit', evento => {
+    evento.preventDefault();
+    iniciar(elementos.nome.value);
+  });
+  elementos.player?.addEventListener('timeupdate', () => verificarPausa(elementos.player.currentTime));
+  elementos.continuar?.addEventListener('click', reproduzirPrincipal);
+  elementos.opcoes.forEach((botao, indice) => botao?.addEventListener('click', () => escolher(indice)));
+  elementos.previas.forEach(previa => {
+    previa?.addEventListener('timeupdate', () => repetirPrevia(previa));
+    previa?.addEventListener('ended', () => repetirPrevia(previa));
+  });
+
+  window.jogo = { principal, decisoes, validarDados, estado, iniciar, verificarPausa, escolher };
   </script>
 </body>
 </html>

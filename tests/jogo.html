@@ -33,6 +33,14 @@
     registrar('tempo não finito', () => { if (!validar(d => { d[0].pausaEm = NaN; }).length) throw new Error('foi aceito'); });
     registrar('tempo após o vídeo', () => { if (!validar(d => { d[4].retomaEm = 90; }).length) throw new Error('foi aceito'); });
     registrar('intervalos sobrepostos', () => { if (!validar(d => { d[1].pausaEm = d[0].retomaEm - .1; }).length) throw new Error('foram aceitos'); });
+    registrar('nome e primeira escolha', () => {
+      if (jogo.iniciar('  Cidade Águas  ') !== true) throw new Error('nome válido não iniciou');
+      jogo.verificarPausa(jogo.decisoes[0].pausaEm + .3);
+      jogo.escolher(0);
+      jogo.escolher(1);
+      if (jogo.estado.nome !== 'Cidade Águas') throw new Error('nome não foi normalizado');
+      if (jogo.estado.escolhas.length !== 1) throw new Error('toque duplicado foi registrado');
+    });
   });
   </script>
 </body>
