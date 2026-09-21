@@ -1,181 +1,125 @@
-# Sesiverso — Jogo de vídeo interativo para feira de ciências
+# Sesiverso — Construa sua cidade com vídeos interativos
 
-**Data:** 2026-09-14
-**Status:** design aprovado, pronto para plano de implementação
+**Data original:** 2026-09-14
+**Revisão:** 2026-09-20
+**Status:** fluxo aprovado; documento revisado para conferência antes do plano de implementação.
 
-## Objetivo
+## Objetivo e etapas
 
-Transformar os vídeos gravados pelo grupo escolar num jogo de narrativa
-ramificada. O visitante assiste a uma cena, escolhe entre duas ou mais opções,
-e a escolha determina a próxima cena.
+O visitante dá um nome à cidade e assiste a um vídeo principal que apresenta cinco decisões sobre seu desenvolvimento. Em cada decisão, escolhe entre duas miniaturas de vídeo em movimento. Ao final, os cinco vídeos selecionados são reproduzidos integralmente na ordem das decisões, apresentando a cidade criada.
 
-O jogo roda num tablet Android durante a feira, em modo quiosque: o visitante
-pega o aparelho e joga sozinho, sem ninguém operando.
+O primeiro entregável é um **MVP online, acessível por link no celular para aprovação**. A versão offline para o tablet Android da feira fica para uma etapa posterior.
 
-## Restrições
+## Plataforma
 
-**Offline obrigatório.** Wi-Fi de feira de ciências é o ponto de falha mais
-provável do dia. O jogo não faz nenhuma requisição de rede.
+- Site estático com HTML, CSS e JavaScript, sem framework, build, backend, conta ou banco de dados.
+- Página e vídeos servidos por HTTPS, preferencialmente na mesma origem. O MVP depende de internet.
+- Interface responsiva para celular em retrato e paisagem, preservando a proporção dos vídeos. Tela cheia opcional; o jogo funciona dentro da página.
+- Nome e escolhas ficam somente na memória da sessão. Recarregar ou reiniciar começa uma nova cidade.
 
-**Tablet Android, Chrome.** O jogo é uma pasta copiada por cabo USB e aberta
-pelo navegador. Sem instalação de aplicativo, sem loja, sem APK.
+## Fluxo aprovado
 
-**Vídeos na horizontal.** Layout em paisagem, tablet apoiado na mesa.
+1. **Nomear a cidade.** Campo “Nome da sua cidade” e botão “Começar”. Texto livre, obrigatório após remover espaços nas extremidades, com limite de 60 caracteres. Exibir o nome como texto, nunca como HTML.
+2. **Assistir ao principal.** O toque em “Começar” inicia `videos/principal/INDEX.mp4` com áudio.
+3. **Escolher.** Em cada ponto de decisão, o principal pausa. Uma interface sobreposta apresenta o tema e duas opções com texto e prévia animada.
+4. **Continuar.** O toque registra uma opção, interrompe as prévias e retoma o principal após o trecho de escolha embutido no vídeo. O vídeo selecionado não toca integralmente nessa etapa.
+5. **Apresentar a cidade.** Quando o principal termina e as cinco escolhas estão registradas, aparece **“Aqui está a cidade [nome]”**. A frase permanece visível durante a apresentação final, que começa automaticamente em condições normais.
+6. **Reproduzir o resultado.** Os cinco vídeos escolhidos tocam integralmente, com áudio, na ordem das decisões, avançando automaticamente. O principal não é repetido nessa sequência.
+7. **Recomeçar.** Após o último vídeo, “Criar outra cidade” limpa nome, escolhas e posição de reprodução e volta à tela inicial.
 
-**Sem dependências.** Nenhum framework, nenhum build, nenhum `node_modules`.
-Editar o jogo é editar um arquivo de texto.
+As prévias antecipam as opções; os vídeos completos ficam reservados para o resultado, evitando repetição durante as escolhas.
 
-## Estrutura de arquivos
+## Acervo disponível
 
-```
-sesiverso/
-  index.html        jogo completo: HTML + CSS + JS num arquivo só
-  videos/           arquivos .mp4 das cenas
-  validar.html      ferramenta de checagem do fluxograma (não vai para a feira)
-```
+Principal: `videos/principal/INDEX.mp4`. Cada pasta de escolhas contém dois vídeos e um `image.png` de referência do trecho correspondente do principal.
 
-O jogo inteiro cabe em `index.html`. Essa decisão não é estética: em páginas
-abertas via `file://`, o Chrome do Android trata cada arquivo como origem
-isolada e bloqueia `fetch()` de arquivos vizinhos. Mantendo o fluxograma
-embutido no próprio HTML, nenhuma requisição acontece e a restrição deixa de
-existir. A tag `<video src="videos/cena.mp4">` não passa por essa checagem e
-carrega normalmente.
-
-## Modelo de dados
-
-Um objeto `cenas` no `index.html`, mapeando identificador para cena:
-
-```js
-const cenas = {
-  inicio: {
-    video: "01-abertura.mp4",
-    pergunta: "O que fazer?",
-    opcoes: [
-      { texto: "Investigar o laboratório", vai: "lab" },
-      { texto: "Voltar para casa",         vai: "casa" }
-    ]
-  },
-  lab: {
-    video: "02-laboratorio.mp4",
-    pergunta: "...",
-    opcoes: [ /* ... */ ]
-  },
-  final_a: {
-    video: "09-final-a.mp4",
-    fim: true
-  }
-};
-```
-
-Campos:
-
-| Campo | Obrigatório | Descrição |
+| Pasta em `videos/escolhas/` | Opção 1 / arquivo | Opção 2 / arquivo |
 |---|---|---|
-| `video` | sim | nome do arquivo dentro de `videos/` |
-| `pergunta` | sim, exceto se `fim` | texto exibido acima dos botões |
-| `opcoes` | sim, exceto se `fim` | lista de `{ texto, vai }` |
-| `fim` | não | `true` marca cena final (mostra "Jogar de novo") |
+| `TRANSPORTE` | Cidade voltada para carros — `CIDADE_VOLTADA_PARA_CARROS.mp4` | Mobilidade sustentável — `MOBILIDADE_SUSTENTAVEL.mp4` |
+| `POLOS_INDUSTRIAIS` | Polos sustentáveis — `POLOS_SUSTENTAVEIS.mp4` | Polos convencionais — `POLOS_CONVENCIONAIS.mp4` |
+| `areas_verdes` | Parques urbanos integrados — `PARQUES_URBANOS_INTREGRADOS.mp4` | Expansão urbana — `EXPEANSAO_URBANA.mp4` |
+| `LIXO` | Economia circular — `ECONOMIA_CIRCULAR.mp4` | Descarte convencional — `DESCARTE_CONVENCIONAL.mp4` |
+| `SANEAMENTO_BASICO` | Saneamento precário — `SANEAMENTO_PRECARIO.mp4` | Saneamento completo — `SANEAMENTO_COMPLETO.mp4` |
 
-A cena de partida tem o identificador `inicio`.
+Preservar a grafia real dos caminhos, inclusive `EXPEANSAO` e `INTREGRADOS`; os rótulos da interface usam português corrigido. A ordem da tabela não define a cronologia, que deve seguir o principal.
 
-Por ser um mapa de identificadores, caminhos distintos podem convergir para a
-mesma cena sem custo algum — útil se o roteiro reunir as ramificações num
-desfecho comum. A estrutura suporta grafo, não apenas árvore.
+## Dados e pontos de decisão
 
-O conteúdo do fluxograma (quantas cenas, quais escolhas, quais vídeos) será
-escrito conforme o roteiro for definido pelo grupo escolar. O formato acima é
-o contrato; o preenchimento é trabalho de conteúdo, não de código.
+O antigo mapa de cenas ramificadas é substituído por uma lista ordenada de cinco decisões embutida em `index.html`. Todos passam pelos mesmos temas; as escolhas alteram a sequência final.
 
-## Fluxo de execução
+Cada decisão contém:
 
-1. **Tela inicial** — "Toque para começar"
-2. **Reprodução** — a cena toca em tela cheia, sem controles visíveis
-3. **Escolha** — ao terminar o vídeo, o último quadro congela e os botões
-   aparecem sobrepostos
-4. **Transição** — o toque carrega a próxima cena e volta ao passo 2
-5. **Final** — cena com `fim: true` mostra "Jogar de novo", que retorna ao
-   passo 1
+- `id` único e `titulo` do tema.
+- `pausaEm`: tempo em segundos no principal para abrir a escolha.
+- `retomaEm`: tempo após o trecho de escolha embutido, de onde continuar.
+- `opcoes`: exatamente duas entradas com `texto` e `video` (caminho relativo completo).
 
-A tela inicial é exigência técnica, não decoração. O Chrome bloqueia
-reprodução com áudio sem um gesto prévio do usuário. Esse primeiro toque
-libera o áudio para toda a sessão e é também o momento de entrar em tela cheia
-(`requestFullscreen`), já que essa chamada também exige gesto.
+**Calibração obrigatória na implementação:** localizar os cinco trechos em `INDEX.mp4` usando os prints, medir início e término de cada tela de escolha e conferir a continuidade das falas. Os prints não contêm timestamps; não usar tempos presumidos. Registrar os valores medidos na lista em ordem cronológica.
 
-## Layout
+Detectar a passagem por `pausaEm`, sem depender de igualdade exata entre tempos. Cada decisão dispara uma vez por partida; retomar não reabre a mesma escolha. Ocultar controles de avanço do principal para evitar pular decisões.
 
-Paisagem, vídeo preenchendo a tela.
+O estado guarda nome, próxima decisão, opções selecionadas e índice do vídeo final. A apresentação final só começa com cinco escolhas válidas.
 
-Na fase de escolha, os botões ocupam a metade inferior, sobre um gradiente
-escuro que garante contraste contra qualquer quadro de vídeo. Alvos de toque
-grandes: o público é formado por crianças e por adultos lendo de pé, de lado,
-a um metro do aparelho.
+## Prévias e reprodução no celular
 
-## Robustez em modo quiosque
+Mostrar duas prévias de até cinco segundos a partir do início dos respectivos vídeos, em repetição, sem áudio e dentro da página (`muted` e `playsinline`). O MVP usa os próprios arquivos, sem criar vídeos de prévia separados.
 
-O visitante fica sozinho com o tablet. Três comportamentos decorrem disso:
+As opções são botões com rótulos legíveis, foco visível e área de toque confortável. Em telas estreitas, podem se empilhar. A interface encobre os textos e imagens de escolha já presentes no principal, evitando duplicação.
 
-**Recomeçar** — botão discreto e permanente num canto. Quem se perde ou quer
-mostrar para outra pessoa não precisa de ajuda.
+Somente as duas prévias atuais tocam simultaneamente; ambas param ao sair da escolha. Se o navegador impedir sua reprodução, as opções continuam identificáveis e selecionáveis pelo texto.
 
-**Reset por inatividade** — 60 segundos sem toque devolve o jogo à tela
-inicial, para que o próximo visitante encontre-o do começo. O temporizador não
-corre durante a reprodução de um vídeo, apenas na fase de escolha e na tela de
-final.
+O toque inicial solicita reprodução com áudio, mas não garante autorização permanente. Se uma reprodução posterior for bloqueada, mostrar “Toque para continuar” e retomar o mesmo vídeo, preservando a partida.
 
-**Falha de vídeo** — arquivo ausente ou corrompido exibe "Ops, essa cena não
-carregou" com botão de voltar ao início. Sem esse tratamento, a falha aparece
-como tela preta e o visitante conclui que o projeto quebrou.
+## Sequência final e carregamento
 
-**Pré-carregamento** — enquanto a cena atual toca, os vídeos de todas as
-escolhas possíveis a partir dela começam a carregar, para que o corte após o
-toque seja imediato.
+“Como um vídeo só” significa reprodução sequencial automática no mesmo espaço visual, sem menus ou toques entre os cinco vídeos. Não há concatenação, renderização, exportação ou download de um arquivo novo.
 
-## Verificação
+Pré-carregar com moderação as próximas opções e o próximo vídeo da sequência. O navegador pode ignorar sugestões de pré-carregamento e a rede pode causar espera entre arquivos. Exibir carregamento sem perder a ordem nem avançar antes do término do vídeo atual. Continuidade sem qualquer intervalo não é garantida pelo MVP.
 
-`validar.html` percorre o objeto `cenas` e reporta:
+Antes de publicar, verificar tamanho, codecs e compatibilidade no celular. Se necessário, produzir cópias otimizadas para web preservando os originais. Escolher hospedagem estática que comporte o acervo e suporte requisições parciais de vídeo para busca por tempo.
 
-- opção cujo `vai` aponta para cena inexistente
-- cena inalcançável a partir de `inicio`
-- cena sem `video`, ou sem `opcoes` e sem `fim`
-- arquivo de vídeo referenciado que não existe na pasta `videos/`
+## Falhas e reinício
 
-Roda no navegador do notebook, em um clique.
+- Falha no principal ou em um vídeo final apresenta “Ops, esse vídeo não carregou”, com “Tentar novamente” e “Voltar ao início”. Tentar novamente preserva a partida e não pula conteúdo.
+- Espera de rede apresenta carregamento; não equivale ao término do vídeo.
+- Toques repetidos não registram escolhas duplicadas.
+- O reset de 60 segundos aplica-se às telas de escolha e à tela final após a sequência. Não corre durante o principal, a apresentação da cidade, a digitação inicial, recuperação de erro ou espera de rede. As prévias animadas não desativam o temporizador.
+- Reiniciar interrompe todos os vídeos e temporizadores e limpa o estado.
 
-A justificativa é concreta: o erro mais provável deste projeto não é lógica de
-programação, é digitar `vai: "laboratrio"` e descobrir na feira que o botão não
-faz nada. O validador transforma esse erro silencioso em erro imediato.
+## Estrutura
 
-## Teste em hardware real
+```text
+sesiverso/
+  index.html       interface, estilos, lógica e lista de decisões
+  validar.html     checagem dos dados e vídeos para quem edita o jogo
+  videos/
+    principal/INDEX.mp4
+    escolhas/<tema>/*.mp4
+    escolhas/<tema>/image.png
+```
 
-O jogo deve ser aberto no tablet Android de destino antes do dia da feira,
-verificando: reprodução com áudio após o primeiro toque, tela cheia, transição
-entre cenas e reset por inatividade.
+Os prints são referências de calibração, não substitutos das prévias. O validador consulta os mesmos dados usados pelo jogo, sem manter uma segunda lista manual.
 
-Esse teste é o único item do projeto com incerteza genuína. O comportamento do
-Chrome do Android com `file://` é conhecido o suficiente para fundamentar as
-decisões acima, mas não substitui a execução no aparelho real. Se algo falhar,
-a alternativa é servir a pasta por um servidor HTTP local no próprio tablet
-(aplicativo gratuito de servidor estático), mantendo o jogo inalterado.
+## Verificação e aceite
 
-## Fora de escopo
+O validador aponta identificadores repetidos, títulos ausentes, decisões sem exatamente duas opções, rótulos ou caminhos vazios, arquivos indisponíveis e tempos inválidos. Exigir `0 <= pausaEm < retomaEm < duração do principal`, com decisões em ordem e sem sobreposição de intervalos.
 
-Pontuação, salvamento de progresso, música de fundo, animações de transição,
-editor visual de fluxograma, suporte a iPad, múltiplos idiomas.
+Testar pelo link publicado em um celular real:
 
-Nada disso é necessário para o objetivo. Cada item pode ser adicionado depois,
-se fizer falta na prática.
+- Nome obrigatório, com acentos, exibido corretamente e com segurança.
+- Cinco pausas no momento correto, sem cortar falas, repetir decisões ou perder escolhas.
+- Duas prévias animadas e silenciosas por decisão; botões utilizáveis em retrato e paisagem.
+- Principal retomado após cada escolha, sem tocar o vídeo escolhido por inteiro nessa etapa.
+- Resultado com exatamente os cinco vídeos selecionados, na ordem, com áudio e avanço automático.
+- Recuperação de bloqueio de reprodução e falha de rede preservando a partida.
+- Reset somente nas fases previstas e nova partida sem dados anteriores.
 
-## Decisões recusadas
+Exercitar todas as primeiras opções, todas as segundas e uma combinação mista. Registrar aparelho e navegador da aprovação; verificar outros aparelhos antes de prometer compatibilidade.
 
-**React + Vite.** O resultado no tablet seria idêntico, ao custo de Node,
-etapa de build e `node_modules` entre cada alteração e cada teste no aparelho.
-Peso sem retorno para uma tela que toca vídeo e mostra botões.
+## Etapa posterior: offline para a feira
 
-**Twine / H5P.** Ferramentas de narrativa ramificada prontas, com editor
-visual. Recusadas porque são fortes em texto e frágeis com vídeo pesado
-offline no Android, e porque entregariam o controle do layout em quiosque
-(recomeçar, reset, tratamento de falha) a uma ferramenta que não foi feita
-para isso.
+Após aprovar o MVP, preparar a execução offline no tablet Android de destino, incluindo vídeos locais, modo quiosque e teste de áudio, continuidade e reinício sem internet. Definir e testar a distribuição nessa etapa; abrir uma pasta via `file://` não é compatibilidade já comprovada.
 
-**Hospedar os vídeos na internet.** Elimina a cópia de arquivos, mas cria
-dependência de Wi-Fi no exato momento em que ela é menos confiável.
+## Fora de escopo do MVP
+
+Offline, instalação de aplicativo, pontuação, login, persistência de partidas, editor visual, ramificações que mudam as próximas decisões, compartilhamento ou exportação do vídeo final, geração de vídeo no servidor e múltiplos idiomas.
