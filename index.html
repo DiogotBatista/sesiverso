@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sesiverso — Crie sua cidade</title>
+</head>
+<body>
+  <main>
+    <h1>Crie sua cidade</h1>
+    <p>O jogo será iniciado por aqui.</p>
+  </main>
+
+  <script id="jogo-core">
+  const principal = 'videos/principal/INDEX.mp4';
+  const decisoes = [
+    {
+      id: 'areas-verdes', titulo: 'Áreas verdes', pausaEm: 62.5, retomaEm: 67.9,
+      opcoes: [
+        { texto: 'Parques urbanos integrados', video: 'videos/escolhas/areas_verdes/PARQUES_URBANOS_INTREGRADOS.mp4' },
+        { texto: 'Expansão urbana', video: 'videos/escolhas/areas_verdes/EXPEANSAO_URBANA.mp4' }
+      ]
+    },
+    {
+      id: 'polos-industriais', titulo: 'Polos industriais', pausaEm: 67.9, retomaEm: 73.3,
+      opcoes: [
+        { texto: 'Polos sustentáveis', video: 'videos/escolhas/POLOS_INDUSTRIAIS/POLOS_SUSTENTAVEIS.mp4' },
+        { texto: 'Polos convencionais', video: 'videos/escolhas/POLOS_INDUSTRIAIS/POLOS_CONVENCIONAIS.mp4' }
+      ]
+    },
+    {
+      id: 'transporte', titulo: 'Transporte', pausaEm: 73.3, retomaEm: 78.8,
+      opcoes: [
+        { texto: 'Cidade voltada para carros', video: 'videos/escolhas/TRANSPORTE/CIDADE_VOLTADA_PARA_CARROS.mp4' },
+        { texto: 'Mobilidade sustentável', video: 'videos/escolhas/TRANSPORTE/MOBILIDADE_SUSTENTAVEL.mp4' }
+      ]
+    },
+    {
+      id: 'lixo', titulo: 'Lixo', pausaEm: 78.8, retomaEm: 84.2,
+      opcoes: [
+        { texto: 'Economia circular', video: 'videos/escolhas/LIXO/ECONOMIA_CIRCULAR.mp4' },
+        { texto: 'Descarte convencional', video: 'videos/escolhas/LIXO/DESCARTE_CONVENCIONAL.mp4' }
+      ]
+    },
+    {
+      id: 'saneamento-basico', titulo: 'Saneamento básico', pausaEm: 84.2, retomaEm: 89.4,
+      opcoes: [
+        { texto: 'Saneamento precário', video: 'videos/escolhas/SANEAMENTO_BASICO/SANEAMENTO_PRECARIO.mp4' },
+        { texto: 'Saneamento completo', video: 'videos/escolhas/SANEAMENTO_BASICO/SANEAMENTO_COMPLETO.mp4' }
+      ]
+    }
+  ];
+
+  function validarDados(lista, duracao) {
+    const erros = [];
+    if (!Array.isArray(lista) || lista.length !== 5) {
+      erros.push('O jogo deve conter exatamente cinco decisões.');
+      return erros;
+    }
+    if (!Number.isFinite(duracao) || duracao <= 0) erros.push('A duração do vídeo principal é inválida.');
+
+    const ids = new Set();
+    let terminoAnterior = -1;
+    lista.forEach((decisao, indice) => {
+      const referencia = `Decisão ${indice + 1}`;
+      if (!decisao || typeof decisao !== 'object') {
+        erros.push(`${referencia} é inválida.`);
+        return;
+      }
+      if (typeof decisao.id !== 'string' || !decisao.id.trim()) erros.push(`${referencia} está sem identificador.`);
+      else if (ids.has(decisao.id)) erros.push(`Identificador repetido: ${decisao.id}.`);
+      else ids.add(decisao.id);
+      if (typeof decisao.titulo !== 'string' || !decisao.titulo.trim()) erros.push(`${referencia} está sem título.`);
+
+      const temposValidos = Number.isFinite(decisao.pausaEm)
+        && Number.isFinite(decisao.retomaEm)
+        && 0 <= decisao.pausaEm
+        && decisao.pausaEm < decisao.retomaEm
+        && decisao.retomaEm < duracao;
+      if (!temposValidos) erros.push(`${referencia} tem tempos inválidos.`);
+      if (Number.isFinite(decisao.pausaEm) && decisao.pausaEm < terminoAnterior) {
+        erros.push(`${referencia} sobrepõe a decisão anterior.`);
+      }
+      if (Number.isFinite(decisao.retomaEm)) terminoAnterior = decisao.retomaEm;
+
+      if (!Array.isArray(decisao.opcoes) || decisao.opcoes.length !== 2) {
+        erros.push(`${referencia} deve ter exatamente duas opções.`);
+      } else {
+        decisao.opcoes.forEach((opcao, opcaoIndice) => {
+          if (!opcao || typeof opcao.texto !== 'string' || !opcao.texto.trim()) {
+            erros.push(`${referencia}, opção ${opcaoIndice + 1}, está sem texto.`);
+          }
+          if (!opcao || typeof opcao.video !== 'string' || !opcao.video.trim()) {
+            erros.push(`${referencia}, opção ${opcaoIndice + 1}, está sem vídeo.`);
+          }
+        });
+      }
+    });
+    return erros;
+  }
+
+  window.jogo = { principal, decisoes, validarDados };
+  </script>
+</body>
+</html>

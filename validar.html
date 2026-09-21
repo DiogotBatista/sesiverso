@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Validar vídeos — Sesiverso</title>
+  <style>body{font:16px system-ui;max-width:60rem;margin:2rem auto;padding:0 1rem;background:#f6f7f9;color:#18202a}video{width:100%;background:#000}output{font-variant-numeric:tabular-nums}.ok{color:#087830}.erro{color:#b00020}iframe{display:none}</style>
+</head>
+<body>
+  <h1>Validação do jogo</h1>
+  <p>Use o player para conferir os pontos de pausa. Tempo: <output id="tempo">carregando…</output></p>
+  <video id="principal" controls preload="metadata"></video>
+  <h2>Relatório</h2>
+  <ol id="relatorio"></ol>
+  <iframe id="dados" src="index.html" title="Dados do jogo"></iframe>
+  <script>
+  const iframe = document.querySelector('#dados');
+  const player = document.querySelector('#principal');
+  const tempo = document.querySelector('#tempo');
+  const relatorio = document.querySelector('#relatorio');
+  const registrar = (texto, ok) => {
+    const item = document.createElement('li');
+    item.className = ok ? 'ok' : 'erro';
+    item.textContent = `${ok ? 'OK' : 'ERRO'} — ${texto}`;
+    relatorio.append(item);
+  };
+  const metadados = caminho => new Promise(resolve => {
+    const video = document.createElement('video');
+    const finalizar = (ok, detalhe) => {
+      clearTimeout(limite);
+      video.removeAttribute('src');
+      video.load();
+      resolve({ caminho, ok, detalhe });
+    };
+    const limite = setTimeout(() => finalizar(false, 'tempo de carregamento excedido'), 15000);
+    video.preload = 'metadata';
+    video.addEventListener('loadedmetadata', () => finalizar(true, `${video.duration.toFixed(2)} s`), { once: true });
+    video.addEventListener('error', () => finalizar(false, 'arquivo ausente ou codec incompatível'), { once: true });
+    video.src = caminho;
+  });
+  async function validarArquivo(caminho) {
+    try {
+      const resposta = await fetch(caminho, { method: 'HEAD' });
+      const tipo = resposta.headers.get('content-type') || '';
+      if (!resposta.ok || !tipo.startsWith('video/')) return { caminho, ok: false, detalhe: `HTTP ${resposta.status}, ${tipo || 'sem MIME'}` };
+      return metadados(caminho);
+    } catch (erro) {
+      return { caminho, ok: false, detalhe: erro.message };
+    }
+  }
+  player.addEventListener('timeupdate', () => {
+    tempo.textContent = `${player.currentTime.toFixed(2)} / ${Number.isFinite(player.duration) ? player.duration.toFixed(2) : '…'} s`;
+  });
+  iframe.addEventListener('load', async () => {
+    const jogo = iframe.contentWindow.jogo;
+    player.src = jogo.principal;
+    await new Promise(resolve => player.addEventListener('loadedmetadata', resolve, { once: true }));
+    const erros = jogo.validarDados(jogo.decisoes, player.duration);
+    registrar(erros.length ? erros.join(' ') : 'configuração das decisões válida', !erros.length);
+    const caminhos = [jogo.principal, ...jogo.decisoes.flatMap(d => d.opcoes.map(o => o.video))];
+    for (const caminho of caminhos) {
+      const resultado = await validarArquivo(caminho);
+      registrar(`${resultado.caminho}: ${resultado.detalhe}`, resultado.ok);
+    }
+  });
+  </script>
+</body>
+</html>
